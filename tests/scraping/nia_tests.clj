@@ -1,6 +1,6 @@
-(ns nia-tests
+(ns scraping.nia-tests
   (:require [clojure.test :refer [deftest is testing run-tests]]
-            [nia :refer [format-links canto-uris]]))
+            [scraping.utils :refer [format-links canto-uris]]))
 
 (deftest format-links-correctly-creates-thesis
   (testing "that `format-links` multimethod correctly creates thesis links"
