@@ -48,12 +48,14 @@
       (let [body (e/get-element-inner-html driver [{:tag :body}])
             links? (e/exists? driver [{:tag :a}])
             link-data (atom [])]
-        (if links?
+        (when links?
           ;; DON'T FOLLOW LINKS IF THEY CONTAIN RETURN TEXT!
-          (doseq [link (e/query-all driver [{:tag :a}])]
-            (e/click driver link)
-            (swap! link-data conj (e/get-element-inner-html driver [{:tag :body}])))
-          (spit (str/replace url "html" "edn") (html body :data)))))))
+          (let [links (e/query-all driver [{:tag :a}])
+                _ (e/click driver {:tag :a :index 1})]
+            (pprint (e/get-element-inner-html driver {:tag :body})))
+          )
+        (spit (str/replace url "html" "edn") (html body :data))
+        link-data))))
 
 (comment
   ;; working minimally!!
