@@ -1,8 +1,7 @@
 (ns scraping.nia
   (:require [babashka.pods :as pods]
             [etaoin.api :as e]
-            [taoensso.timbre :as timbre]
-            [clojure.string :as str]
+            [taoensso.timbre :as timbre] 
             [clojure.pprint :refer [pprint]]
             [scraping.utils :refer [format-links]]))
 
@@ -17,7 +16,7 @@
 
 (require '[pod.retrogradeorbit.bootleg.html :refer [html]])
 
-(def cantos #{1 2 4})
+(def cantos [1 2 4])
 
 (def urls (into [] (comp
                     cat
@@ -31,26 +30,29 @@
                                                          :par-number i}))]]
                   [thesis parentheses])))
 
-(def page-text (atom {:canto {1 {:body []
-                                 :parens []}
-                              2 {:body []
-                                 :parens []}
-                              4 {:body []
-                                 :parens []}}}))
+(def page-text (atom {:canto (into []
+                                   (repeat 3 {:body []
+                                              :parens []}))}))
 
 (def page-root "https://andrewhugill.com/nia/")
 
 (defn navigate-to-urls! []
   (e/with-firefox driver
-    (doseq [[thesis [& parens]] urls
-            :let [p (doseq [p parens]
-                      (e/go driver (str page-root p))
-                      (let [el-text (e/get-element-inner-html driver {:tag :body})]
-                        (swap! page-text update-in [:canto 1 :parens] conj el-text))
-                      (e/wait 1))]]
-      parens)))
+    (map-indexed
+     (fn [i [thesis [& parens]]]
+       (e/go driver (str page-root thesis))
+       (e/wait 3)
+       (let [el-text (e/get-element-inner-html driver {:tag :body})]
+         (swap! page-text update-in [:canto i :body] conj el-text))
+       (doseq [p parens]
+         (e/go driver (str page-root p))
+         (let [el-text (e/get-element-inner-html driver {:tag :body})]
+           (swap! page-text update-in [:canto i :parens] conj el-text))
+         (e/wait 3))) urls)))
 
 (comment
+  (e/get-user-agent driver)
+  urls
   ;; better almost working code!
   (navigate-to-urls!)
   ;; in case of exception
