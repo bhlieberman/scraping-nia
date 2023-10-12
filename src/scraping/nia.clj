@@ -4,7 +4,6 @@
             [taoensso.timbre :as timbre]
             [clojure.string :as str]
             [clojure.pprint :refer [pprint]]
-            [clojure.walk :refer [postwalk postwalk-demo]]
             [scraping.utils :refer [format-links]]))
 
 ;; set logging to info per docs
@@ -20,46 +19,39 @@
 
 (def cantos #{1 2 4})
 
-(def page-root "https://andrewhugill.com/nia/preface.html")
+(def urls (into [] (comp
+                    cat
+                    (partition-all 2))
+                (for [canto cantos
+                      :let [thesis (format-links {:type :thesis
+                                                  :number canto})
+                            parentheses (for [i (range 1 6)]
+                                          (format-links {:type :parenthesis
+                                                         :canto-number canto
+                                                         :par-number i}))]]
+                  [thesis parentheses])))
 
-(defn follow-link? [l]
-  (let [hash (str/split l #"\#")]
-    (str/ends-with? hash "ret")))
+(def page-text (atom {:canto {1 {:body []
+                                 :parens []}
+                              2 {:body []
+                                 :parens []}
+                              4 {:body []
+                                 :parens []}}}))
 
-;; describe page structure in data
-;; TBD if useful
-(def ^{:depth 0
-       :root page-root}
-  page-structure [[{:links [{:par
-                             (into []
-                                   (for [i (range 5)]
-                                     {:level i
-                                      :content nil
-                                      :footnotes []}))}]
-                    :content nil}]])
+(def page-root "https://andrewhugill.com/nia/")
 
-(defn navigate! [root link-data]
-  (e/with-firefox-headless driver
-    (let [_ (e/go driver root)
-          url (format-links link-data)]
-      (if (e/exists? driver [{:tag :a :fn/link url}])
-        (e/click driver [{:tag :a :fn/link url}])
-        (throw (ex-info "no such hyperlink on page" {})))
-      (let [body (e/get-element-inner-html driver [{:tag :body}])
-            links? (e/exists? driver [{:tag :a}])
-            link-data (atom [])]
-        (when links?
-          ;; DON'T FOLLOW LINKS IF THEY CONTAIN RETURN TEXT!
-          (let [links (e/query-all driver [{:tag :a}])
-                _ (e/click driver {:tag :a :index 1})]
-            (pprint (e/get-element-inner-html driver {:tag :body})))
-          )
-        (spit (str/replace url "html" "edn") (html body :data))
-        link-data))))
+(defn navigate-to-urls! []
+  (e/with-firefox driver
+    (doseq [[thesis [& parens]] urls
+            :let [p (doseq [p parens]
+                      (e/go driver (str page-root p))
+                      (let [el-text (e/get-element-inner-html driver {:tag :body})]
+                        (swap! page-text update-in [:canto 1 :parens] conj el-text))
+                      (e/wait 1))]]
+      parens)))
 
 (comment
-  ;; working minimally!!
-  (navigate! page-root {:type :thesis
-                        :number 1})
+  ;; better almost working code!
+  (navigate-to-urls!)
   ;; in case of exception
   (pprint *e))
