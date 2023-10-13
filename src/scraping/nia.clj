@@ -1,7 +1,6 @@
 (ns scraping.nia
   (:require [babashka.pods :as pods]
             [babashka.curl :as curl] 
-            [clojure.pprint :refer [pprint]]
             [scraping.utils :refer [format-links improve-hiccup]]))
 
 ;; load bootleg pod
@@ -46,8 +45,7 @@
          (swap! page-text update-in [:canto i :parens] conj resp-body)))) urls))
 
 (comment
+  (spit "nia.edn" @page-text)
   ;; IT WORKS!
-  (pprint (get-in @page-text [:canto 0 :parens 3]))
-  ;; better almost working code!
   (navigate-to-urls!)
   )
