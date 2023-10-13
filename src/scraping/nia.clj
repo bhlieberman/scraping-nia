@@ -4,8 +4,7 @@
             [etaoin.api :as e]
             [taoensso.timbre :as timbre]
             [clojure.pprint :refer [pprint]]
-            [clojure.string :as str]
-            [scraping.utils :refer [format-links]]))
+            [scraping.utils :refer [format-links improve-hiccup]]))
 
 ;; set logging to info per docs
 (timbre/set-level! :info)
@@ -39,7 +38,7 @@
 (def page-root "https://andrewhugill.com/nia/")
 
 (defn process-resp [resp]
-  (-> resp :body (html :data)))
+  (-> resp :body (html :data) improve-hiccup))
 
 (defn navigate-to-urls! []
   (map-indexed
@@ -56,7 +55,7 @@
 
 (comment
   ;; IT WORKS!
-  @page-text
+  (pprint (get-in @page-text [:canto 0 :parens 3]))
   ;; better almost working code!
   (navigate-to-urls!)
   )

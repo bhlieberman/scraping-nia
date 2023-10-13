@@ -1,4 +1,5 @@
-(ns scraping.utils)
+(ns scraping.utils
+  (:require [clojure.string :as str]))
 
 (defn canto-uris [n] (str "nia" n "%s.html"))
 
@@ -14,6 +15,16 @@
   (str (format (canto-uris canto-number)
                (or (str "par" par-number) "")) "#fn"
        fn-number))
+
+(defn improve-hiccup [hic]
+  (into [:div] 
+        (for [x (rest hic)
+              :when (not= x "\n")
+              :when (not= x [:br])
+              :let [inter (cond
+                            (string? x) [:span (str/trim x)]
+                            (vector? x) x)]]
+          inter)))
 
 (comment (format-links {:type :footnote
                         :canto-number 1
