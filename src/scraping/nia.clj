@@ -1,8 +1,10 @@
 (ns scraping.nia
   (:require [babashka.pods :as pods]
+            [babashka.curl :as curl]
             [etaoin.api :as e]
-            [taoensso.timbre :as timbre] 
+            [taoensso.timbre :as timbre]
             [clojure.pprint :refer [pprint]]
+            [clojure.string :as str]
             [scraping.utils :refer [format-links]]))
 
 ;; set logging to info per docs
@@ -36,24 +38,25 @@
 
 (def page-root "https://andrewhugill.com/nia/")
 
+(defn process-resp [resp]
+  (-> resp :body (html :data)))
+
 (defn navigate-to-urls! []
-  (e/with-firefox driver
-    (map-indexed
-     (fn [i [thesis [& parens]]]
-       (e/go driver (str page-root thesis))
-       (e/wait 3)
-       (let [el-text (e/get-element-inner-html driver {:tag :body})]
-         (swap! page-text update-in [:canto i :body] conj el-text))
-       (doseq [p parens]
-         (e/go driver (str page-root p))
-         (let [el-text (e/get-element-inner-html driver {:tag :body})]
-           (swap! page-text update-in [:canto i :parens] conj el-text))
-         (e/wait 3))) urls)))
+  (map-indexed
+   (fn [i [thesis [& parens]]]
+     (let [resp-body (try (-> (str page-root thesis) curl/get process-resp)
+                          (catch Exception _
+                            (println "could not find " thesis)))]
+       (swap! page-text update-in [:canto i :body] conj resp-body))
+     (doseq [p parens]
+       (let [resp-body (try (-> (str page-root p) curl/get process-resp)
+                            (catch Exception _
+                              (println "could not find " parens)))]
+         (swap! page-text update-in [:canto i :parens] conj resp-body)))) urls))
 
 (comment
-  (e/get-user-agent driver)
-  urls
+  ;; IT WORKS!
+  @page-text
   ;; better almost working code!
   (navigate-to-urls!)
-  ;; in case of exception
-  (pprint *e))
+  )

@@ -1,6 +1,7 @@
 (ns scraping.nia-tests
   (:require [clojure.test :refer [deftest is testing run-tests]]
-            [scraping.utils :refer [format-links canto-uris]]))
+            [scraping.utils :refer [format-links canto-uris]]
+            [scraping.nia :refer [process-resp]]))
 
 (deftest format-links-correctly-creates-thesis
   (testing "that `format-links` multimethod correctly creates thesis links"
@@ -22,5 +23,9 @@
                     :par-number 4
                     :fn-number 1}]
       (is (= "nia4par.html#fn1" (format-links footnote))))))
+
+(deftest resp-to-hiccup
+  (testing "that a dummy http response is formatted into hiccup"
+    (is (= [:div "Hello world"] (process-resp {:body "<body><div>Hello world</div></body>"})))))
 
 (run-tests)
