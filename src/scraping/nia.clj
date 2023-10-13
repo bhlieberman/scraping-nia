@@ -1,16 +1,8 @@
 (ns scraping.nia
   (:require [babashka.pods :as pods]
-            [babashka.curl :as curl]
-            [etaoin.api :as e]
-            [taoensso.timbre :as timbre]
+            [babashka.curl :as curl] 
             [clojure.pprint :refer [pprint]]
             [scraping.utils :refer [format-links improve-hiccup]]))
-
-;; set logging to info per docs
-(timbre/set-level! :info)
-
-;; instantiate driver
-(def driver (e/firefox))
 
 ;; load bootleg pod
 (pods/load-pod 'retrogradeorbit/bootleg "0.1.9")
